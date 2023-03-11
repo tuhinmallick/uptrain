@@ -16,7 +16,7 @@ class FeatureMeasurable(Measurable):
             self.helper = OutputFeatureMeasurable(framework, feature_name)
         else:
             raise Exception(
-                "Helper Measurable not defined for dictionary type %s" % self.dictn_type
+                f"Helper Measurable not defined for dictionary type {self.dictn_type}"
             )
 
     def _compute(self, inputs=None, outputs=None, gts=None, extra=None) -> any:

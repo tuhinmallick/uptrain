@@ -35,11 +35,10 @@ def convert_sentence_to_emb(sentences):
     return np.array(F.normalize(embs, p=2, dim=1))
 
 def downsample_embs(embs, algo='avg'):
-    if algo == 'avg':
-        embs = np.reshape(embs, (embs.shape[0], 16, -1))
-        embs = np.mean(embs, axis=2)
-    else:
+    if algo != 'avg':
         raise Exception("algo is not defined")
+    embs = np.reshape(embs, (embs.shape[0], 16, -1))
+    embs = np.mean(embs, axis=2)
     return embs
 
 
@@ -49,12 +48,12 @@ def generate_reference_dataset_with_embeddings(dataset, tokenizer, model, datase
     file_name = "ref_dataset.json"
     if not os.path.exists(file_name):
         for jdx in range(10):
-            this_batch = ["summarize: " + x for x in dataset["text"][jdx*100: (jdx+1)*100]]
+            this_batch = [f"summarize: {x}" for x in dataset["text"][jdx*100: (jdx+1)*100]]
             input_embs = tokenizer(this_batch, truncation=True, padding=True, return_tensors="pt").input_ids
             output_embs = model.generate(input_embs)
             summaries = tokenizer.batch_decode(output_embs, skip_special_tokens=True)
             bert_embs = convert_sentence_to_emb(summaries)
-            print("Generated bert embeddings for " + str((jdx+1) * 100) + " training samples")
+            print(f"Generated bert embeddings for {str((jdx + 1) * 100)} training samples")
             bert_embs_downsampled = downsample_embs(bert_embs)
             for idx in range(len(this_batch)):
                 try:
@@ -73,7 +72,7 @@ def generate_reference_dataset_with_embeddings(dataset, tokenizer, model, datase
 
         with open(file_name, "w") as f:
             json.dump(data, f, cls=uptrain.UpTrainEncoder)
-    
+
     with open(file_name) as f:
         data = json.load(f)
     return data
@@ -87,9 +86,9 @@ def combine_datasets(dataset_1, label_1, dataset_2, label_2):
     return final_test_dataset
 
 def download_wikihow_csv_file(file_name):
-    remote_url = "https://oodles-dev-training-data.s3.us-west-1.amazonaws.com/" + file_name
+    remote_url = f"https://oodles-dev-training-data.s3.us-west-1.amazonaws.com/{file_name}"
     if not os.path.exists(file_name):
-        print("Starting to download " + file_name)
+        print(f"Starting to download {file_name}")
         try:
             # Most Linux distributions have Wget installed by default.
             # Below command is to install wget for MacOS
@@ -99,7 +98,12 @@ def download_wikihow_csv_file(file_name):
             dummy = 1
         try:
             if not os.path.exists(file_name):
-                file_downloaded_ok = subprocess.call("wget " + remote_url, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+                file_downloaded_ok = subprocess.call(
+                    f"wget {remote_url}",
+                    shell=True,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.STDOUT,
+                )
                 print("Data downloaded")
             print("Prepared Wikihow Dataset")
         except Exception as e:
@@ -109,7 +113,7 @@ def download_wikihow_csv_file(file_name):
             print("Step 1: Paste the link https://oodles-dev-training-data.s3.amazonaws.com/wikihowAll.csv in your browser")
             print("Step 2: Once the csv file is downloaded, move it here (i.e. YOUR_LOC/uptrain/examples/text_summarization/")
     else:
-        print(file_name + " already present")
+        print(f"{file_name} already present")
 
 def get_num_words_in_text(inputs, outputs, gts=None, extra_args={}):
     txt_buckets = []
@@ -118,7 +122,7 @@ def get_num_words_in_text(inputs, outputs, gts=None, extra_args={}):
         num_words = len(txt.split())
         for idx in range(len(buckets)):
             if (num_words >= buckets[idx]) and (num_words < buckets[idx+1]):
-                txt_buckets.append(str(buckets[idx]) + "-" + str(buckets[idx+1]))
+                txt_buckets.append(f"{str(buckets[idx])}-{str(buckets[idx + 1])}")
                 break
     return txt_buckets
 

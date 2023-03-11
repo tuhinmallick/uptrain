@@ -9,8 +9,7 @@ class InputFeatureMeasurable(Measurable):
         self.feature_name = feature_name
 
     def _compute(self, inputs=None, outputs=None, gts=None, extra=None) -> any:
-        val = inputs[self.feature_name]
-        return val
+        return inputs[self.feature_name]
 
     def col_name(self):
         return str(self.feature_name)

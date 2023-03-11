@@ -78,12 +78,6 @@ def top_k_tokens (model, tokenizer, text, k = 5):
 def create_sample_dataset(dataset_size):
     nullify_ratio = 0.05
     nullify_count = int(nullify_ratio * dataset_size)
-    data = {
-        "version": "0.1.0",
-        "source": "sample",
-        "url": "self-generated",
-        "data": []
-    }
     sentences = []
 
     for _ in range(dataset_size):
@@ -105,25 +99,25 @@ def create_sample_dataset(dataset_size):
             sentence = f'{company} {product} {joiner} {adjective}'
         else:
             sentence = f'{product} made by {company} {joiner} {adjective}'
-        
+
         sentences.append({ "text": sentence, "label": label })
-    
+
     # Make some values null to make sure UpTrain data integrity check is working
     for _ in range(nullify_count):
         element = random.choice(sentences)
         element['text'] = None
-    
-    data["data"] = sentences
-    return data
+
+    return {
+        "version": "0.1.0",
+        "source": "sample",
+        "url": "self-generated",
+        "data": sentences,
+    }
 
 def create_dataset_from_csv(file_name, col_name, save_file_name, attrs={}, min_samples=-1):
     data = pd.read_csv(file_name)
     vals = list(data[col_name])
-    r_data = []
-
-    for val in vals:
-        r_data.append({'text': str(val), 'label': 0})
-
+    r_data = [{'text': str(val), 'label': 0} for val in vals]
     json_data = attrs
     json_data.update({
       "data": r_data

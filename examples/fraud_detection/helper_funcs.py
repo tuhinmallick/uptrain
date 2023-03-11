@@ -20,7 +20,12 @@ def download_dataset(s3_url, data_file):
         try:
             if not os.path.exists("data.zip"):
                 print("Downloading data from the remote server")
-                subprocess.call("wget " + remote_url, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+                subprocess.call(
+                    f"wget {remote_url}",
+                    shell=True,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.STDOUT,
+                )
                 print("Data downloaded")
         except Exception as e:
             print(e)
@@ -31,7 +36,7 @@ def download_dataset(s3_url, data_file):
     else:
         print("Data file exists. Skipping download.")
 
-    print(str(data_file) + " dataset prepared successfully!")
+    print(f"{str(data_file)} dataset prepared successfully!")
 
 
 '''
@@ -42,18 +47,14 @@ tabs to be used for indentation.
 def pretty(d, indent=0):
     if isinstance(d, list):
         for value in d:
-            if isinstance(value, list):
-                pretty(value, indent)
-            elif isinstance(value, dict):
+            if isinstance(value, (list, dict)):
                 pretty(value, indent)
             else:
                 print('\t' * (indent) + str(value))
     else:
         for key, value in d.items():
             print('\t' * indent + "- " + str(key) + ":")
-            if isinstance(value, list):
-                pretty(value, indent+1)
-            elif isinstance(value, dict):
+            if isinstance(value, (list, dict)):
                 pretty(value, indent+1)
             else:
                 print('\t' * (indent+1) + str(value))

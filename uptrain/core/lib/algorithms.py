@@ -8,10 +8,7 @@ def estimate_earth_moving_cost(prod_dist, ref_dist, clusters):
         dirt_required = prod_dist[jdx] - ref_dist[jdx]
         dictn = []
         for kdx in range(num_clusters):
-            if jdx == kdx:
-                dirt_can_be_transported = 0
-            else:
-                dirt_can_be_transported = prod_dist[kdx] - ref_dist[kdx]
+            dirt_can_be_transported = 0 if jdx == kdx else prod_dist[kdx] - ref_dist[kdx]
             this_dirt = -dirt_can_be_transported
             if this_dirt * dirt_required < 0:
                 cost_per_dirt = 1000000000

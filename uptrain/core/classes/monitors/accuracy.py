@@ -28,7 +28,7 @@ class Accuracy(AbstractMonitor):
 
         self.log_handler.add_scalars(
             self.plot_name,
-            {"y_" + self.plot_name: np.mean(self.abs_err_arr)},
+            {f"y_{self.plot_name}": np.mean(self.abs_err_arr)},
             len(self.abs_err_arr),
             self.dashboard_name,
         )

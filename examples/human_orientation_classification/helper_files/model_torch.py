@@ -61,10 +61,9 @@ def get_accuracy_torch(
             pred_class = torch.round(torch.sigmoid(test_logits))
             pred_classes.extend(pred_class)
             gt_classes.extend(list(ele[1]))
-    accuracy = np.sum(np.array(gt_classes) == np.array(pred_classes)) / len(
+    return np.sum(np.array(gt_classes) == np.array(pred_classes)) / len(
         pred_classes
     )
-    return accuracy
 
 
 def train_model_torch(

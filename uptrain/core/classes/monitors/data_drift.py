@@ -18,7 +18,7 @@ class DataDrift(AbstractMonitor):
 
     def model_choices(self, check):
         self.is_embedding = check.get('is_embedding', None)
-        if self.is_embedding == None:
+        if self.is_embedding is None:
             return [{"is_embedding": False}, {"is_embedding": True}]
         else:
             return [{"is_embedding": check['is_embedding']}]
@@ -49,10 +49,10 @@ class DataDrift(AbstractMonitor):
         }
         self.clustering_helper = Clustering(clustering_args)
         if self.is_embedding:
-            self.plot_name = "Embeddings_" + self.measurable.col_name()
+            self.plot_name = f"Embeddings_{self.measurable.col_name()}"
             self.emd_threshold = check.get("emd_threshold", 1)
         else:
-            self.plot_name = "Scalar_" + self.measurable.col_name()
+            self.plot_name = f"Scalar_{self.measurable.col_name()}"
         self.bucket_reference_dataset()
 
     def need_ground_truth(self):
@@ -105,7 +105,10 @@ class DataDrift(AbstractMonitor):
 
             if self.ref_dist.shape[0] == 1:
                 if self.is_embedding:
-                    bar_graph_buckets = ["cluster_" + str(idx) for idx in range(len(list(np.reshape(self.clusters,-1))))]
+                    bar_graph_buckets = [
+                        f"cluster_{str(idx)}"
+                        for idx in range(len(list(np.reshape(self.clusters, -1))))
+                    ]
                 else:
                     bar_graph_buckets = list(np.reshape(self.clusters,-1))
 
@@ -137,20 +140,18 @@ class DataDrift(AbstractMonitor):
                         drift_detected = drift_detected or (self.costs[idx] > self.emd_threshold)
                     else:
                         this_psi = sum(
-                            [
-                                (self.prod_dist[idx][jdx] - self.ref_dist[idx][jdx])
-                                * np.log(
-                                    max(self.prod_dist[idx][jdx], 0.0001)
-                                    / self.ref_dist[idx][jdx]
-                                )
-                                for jdx in range(self.ref_dist.shape[1])
-                            ]
+                            (self.prod_dist[idx][jdx] - self.ref_dist[idx][jdx])
+                            * np.log(
+                                max(self.prod_dist[idx][jdx], 0.0001)
+                                / self.ref_dist[idx][jdx]
+                            )
+                            for jdx in range(self.ref_dist.shape[1])
                         )
                         self.psis[idx] = this_psi
                         drift_detected = drift_detected or (this_psi > 0.3)
                 self.drift_detected = drift_detected
                 if self.drift_detected:
-                    alert = "Data Drift last detected at " + str(self.count) + " for Embeddings with Earth moving distance = " + str(float(self.costs[0]))
+                    alert = f"Data Drift last detected at {self.count} for Embeddings with Earth moving distance = {float(self.costs[0])}"
                     self.log_handler.add_alert(
                         "Data Drift Alert 🚨",
                         alert,
@@ -160,35 +161,41 @@ class DataDrift(AbstractMonitor):
             if self.is_embedding:
                 dict_emc = dict(
                     zip(
-                        ["y_" + self.measurable.col_name() for x in range(self.costs.shape[0])],
+                        [
+                            f"y_{self.measurable.col_name()}"
+                            for _ in range(self.costs.shape[0])
+                        ],
                         [float(x) for x in list(self.costs)],
                     )
                 )
                 # dict_emc.update({"threshold": self.emd_threshold})
                 self.log_handler.add_scalars(
-                    self.measurable.col_name() + " - earth_moving_costs",
+                    f"{self.measurable.col_name()} - earth_moving_costs",
                     dict_emc,
                     self.count,
                     self.dashboard_name,
-                    file_name="embeddings"
+                    file_name="embeddings",
                 )
                 self.log_handler.add_scalars(
-                    self.measurable.col_name() + " - earth_moving_costs",
+                    f"{self.measurable.col_name()} - earth_moving_costs",
                     {list(dict_emc.keys())[0]: self.emd_threshold},
                     self.count,
                     self.dashboard_name,
-                    file_name="threshold"
+                    file_name="threshold",
                 )
             else:
                 dict_psi = dict(
                     zip(
-                        ["y_" + self.measurable.col_name() + "_" + str(x) for x in range(self.psis.shape[0])],
+                        [
+                            f"y_{self.measurable.col_name()}_{str(x)}"
+                            for x in range(self.psis.shape[0])
+                        ],
                         [float(x) for x in list(self.psis)],
                     )
                 )
-                dict_psi.update({"threshold": 0.3})
+                dict_psi["threshold"] = 0.3
                 self.log_handler.add_scalars(
-                    self.measurable.col_name() + " - population_stability_index_scalar",
+                    f"{self.measurable.col_name()} - population_stability_index_scalar",
                     dict_psi,
                     self.count,
                     self.dashboard_name,

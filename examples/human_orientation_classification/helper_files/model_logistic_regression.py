@@ -16,13 +16,8 @@ def get_accuracy_lr(testing_file, model_save_name, model_dir="trained_models_lr/
     print("Evaluating on ", len(read_json(testing_file)), " data-points")
     pred_classes = []
     pred_classes = model.predict(X_test)
-    count = 0
-    for i in range(len(pred_classes)):
-        if pred_classes[i] == y_test[i]:
-            count += 1
-
-    accuracy = count / len(pred_classes)
-    return accuracy
+    count = sum(pred_classes[i] == y_test[i] for i in range(len(pred_classes)))
+    return count / len(pred_classes)
 
 
 def run_real_world_inference(
@@ -32,10 +27,7 @@ def run_real_world_inference(
     X_test, y_test = testing_dataset.load_x_y_from_data()
     model = pickle.load(open(model_dir + model_save_name, "rb"))
     pred_classes = model.predict(X_test)
-    count = 0
-    for i in range(len(pred_classes)):
-        if pred_classes[i] == y_test[i]:
-            count += 1
+    count = sum(pred_classes[i] == y_test[i] for i in range(len(pred_classes)))
 
 
 def train_model_lr(training_file, model_save_name, model_dir="trained_models_lr/"):

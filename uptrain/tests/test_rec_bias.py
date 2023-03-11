@@ -20,7 +20,12 @@ def test_rec_bias():
             dummy = 1
         try:
             if not os.path.exists("sigir_data.json"):
-                file_downloaded_ok = subprocess.call("wget " + remote_url, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+                file_downloaded_ok = subprocess.call(
+                    f"wget {remote_url}",
+                    shell=True,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.STDOUT,
+                )
                 print("Data downloaded")
         except:
             print("Could not load training data")
@@ -52,7 +57,7 @@ def test_rec_bias():
             except:
                 vector_test = []
             vector_pred = self.model.get_vector(y_preds)
-            if len(vector_pred)>0 and len(vector_test)>0:
+            if len(vector_pred) > 0 and vector_test:
                 cos_dist = cosine(vector_pred, vector_test)
                 self.cos_distances.append(cos_dist)
                 self.log_handler.add_histogram('cosine_distance', self.cos_distances, self.dashboard_name)
@@ -121,13 +126,13 @@ def test_rec_bias():
     for i in range(int(len(x_test)/inference_batch_size)):
         # Define input in the format understood by the UpTrain framework
         inputs = {"feats": x_test[i*inference_batch_size:(i+1)*inference_batch_size]}
-        
+
         # Do model prediction
         preds = model_predict(model, inputs['feats'])
 
         # Log input and output to framework
         ids = framework.log(inputs=inputs, outputs=preds)
-        
+
         # Getting ground truth and logging to framework
         y_test_batch = y_test[i*inference_batch_size:(i+1)*inference_batch_size]
         gts = [y[0]['product_sku'] for y in y_test_batch]

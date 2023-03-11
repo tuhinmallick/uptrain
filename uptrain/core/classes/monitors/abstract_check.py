@@ -36,10 +36,10 @@ class AbstractCheck(ABC):
 
     def model_choices(self, check):
         allowed_model_values = [x['allowed_values'] for x in check.get('model_args', [])]
-        num_model_options = sum([len(x) > 1 for x in allowed_model_values])
+        num_model_options = sum(len(x) > 1 for x in allowed_model_values)
 
-        all_choices = []
         if num_model_options > 0:
+            all_choices = []
             for m in allowed_model_values[0]:
                 check_copy = copy.deepcopy(check)
                 check_copy['model_args'][0]['allowed_values'] = [m]

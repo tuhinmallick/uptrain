@@ -48,21 +48,19 @@ def test_data_integrity():
 
     framework_torch = uptrain.Framework(cfg)
 
-    model_dir = 'trained_models_torch/'
     model_save_name = 'version_0'
     real_world_dataset = KpsDataset(
         real_world_test_cases, batch_size=inference_batch_size, is_test=True
     )
     model = BinaryClassification()
-    model.load_state_dict(torch.load(model_dir + model_save_name))
+    model.load_state_dict(torch.load(f'trained_models_torch/{model_save_name}'))
     model.eval()
 
-    for i,elem in enumerate(real_world_dataset):
-
+    for elem in real_world_dataset:
         # Do model prediction
         inputs = {"kps": elem[0]["kps"], "id": elem[0]["id"]}
         x_test = torch.tensor(inputs["kps"]).type(torch.float)
-        test_logits = model(x_test).squeeze() 
+        test_logits = model(x_test).squeeze()
         preds = torch.round(torch.sigmoid(test_logits)).detach().numpy()
 
         # Log model inputs and outputs to the uptrain Framework to monitor data integrity

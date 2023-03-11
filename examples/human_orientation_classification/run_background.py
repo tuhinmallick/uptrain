@@ -25,7 +25,12 @@ if not os.path.exists(data_dir):
         dummy = 1
     try:
         if not os.path.exists("data.zip"):
-            file_downloaded_ok = subprocess.call("wget " + remote_url, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+            file_downloaded_ok = subprocess.call(
+                f"wget {remote_url}",
+                shell=True,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.STDOUT,
+            )
             print("Data downloaded")
         with zipfile.ZipFile("data.zip", 'r') as zip_ref:
             zip_ref.extractall("./")
@@ -96,13 +101,13 @@ cfg = {
 
     # Don't retrain
     "retrain_after": 300,
-    
+
     # A local folder to store the retraining dataset
     "retraining_folder": "uptrain_smart_data",
-    
+
     # A function to visualize clusters in the data
     "cluster_visualize_func": plot_all_cluster,
-    
+
     "logging_args": {"st_logging": True},
     "run_background_log_consumer": True
 }
@@ -121,12 +126,11 @@ model = BinaryClassification()
 model.load_state_dict(torch.load(model_dir + model_save_name))
 model.eval()
 
-for i,elem in enumerate(real_world_dataset):
-
+for elem in real_world_dataset:
     # Do model prediction
     inputs = {"kps": elem[0]["kps"], "id": elem[0]["id"]}
     x_test = torch.tensor(inputs["kps"]).type(torch.float)
-    test_logits = model(x_test).squeeze() 
+    test_logits = model(x_test).squeeze()
     preds = torch.round(torch.sigmoid(test_logits)).detach().numpy()
 
     # Log model inputs and outputs to the uptrain Framework to monitor data drift

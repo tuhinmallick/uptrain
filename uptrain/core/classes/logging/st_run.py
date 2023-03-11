@@ -28,22 +28,18 @@ log_folder = sys.argv[1]
 metadata_file = os.path.join(log_folder, "metadata.json")
 with open(metadata_file, encoding='utf-8') as f:
     metadata = json.loads(f.read())
-model_args = metadata['model_args']
 feature_args = metadata['feature_args']
 
 model_to_compare = None
 other_models = {}
 num_models_compare = 1
-if model_args:
+if model_args := metadata['model_args']:
     if len(model_args) > 1:
-        # st.sidebar.subheader("Select model type to compare against")
-        all_model_types = []
-        for model_type in model_args:
-            all_model_types.append(model_type['feature_name'])
+        all_model_types = [model_type['feature_name'] for model_type in model_args]
         model_selected = st.sidebar.selectbox("Model type to compare with", 
             all_model_types, key='select_model_args')
         model_compare_ind = all_model_types.index(model_selected)
-        
+
         st.sidebar.subheader("Select other model types")
         for i, model in enumerate(model_args):
             if i==model_compare_ind:
@@ -51,24 +47,24 @@ if model_args:
             model_name = model['feature_name']
             value = st.sidebar.selectbox(model_name, model['allowed_values'], 
                 key=f'model_{model_name}')
-            other_models.update({model_name: value})
+            other_models[model_name] = value
 
     elif len(model_args) == 1:
-        model_compare_ind = 0   
+        model_compare_ind = 0
     model_to_compare = model_args[model_compare_ind]
     num_models_compare = len(model_to_compare['allowed_values'])
 
 features_to_slice = {}
 if feature_args:
     st.sidebar.subheader("Select relevant features")
-    for i, feature in enumerate(feature_args):
+    for feature in feature_args:
         feature_name = feature['feature_name']
         allowed_feats = feature['allowed_values']
         allowed_feats.insert(0, 'All')
         value = st.sidebar.selectbox(feature_name, allowed_feats, 
             key=f'feature_{feature_name}')
         if value != 'All':
-            features_to_slice.update({feature_name: value})
+            features_to_slice[feature_name] = value
 
 
 def return_plotly_fig(y_axis, x_axis="Num predictions", x_log=False, y_log=False):
@@ -94,10 +90,11 @@ def slice_data(
         for feat_name, value in features_to_slice.items():
             if value != 'All':
                 if 'feature_' + feat_name in df.columns:
-                    if cond is None:
-                        cond = (df['feature_' + feat_name] == value)
-                    else:
-                        cond = cond & (df['feature_' + feat_name] == value)
+                    cond = (
+                        (df['feature_' + feat_name] == value)
+                        if cond is None
+                        else cond & (df['feature_' + feat_name] == value)
+                    )
                 else:
                     cond = [False] * len(df)
     if model_to_compare is not None:
@@ -144,23 +141,21 @@ def plot_line_charts(files, plot_name):
         y_log = st.checkbox(
             "log y", help="y-axis in log-scale", key=plot_name + "y"
         )
-    
+
     cols = st.columns(2)
     for j in range(num_models_compare):
         fig = return_plotly_fig(y_axis, x_axis, x_log, y_log)
         for i, csv_file in enumerate(files):
             # Reading the csv file
             df = pd.read_csv(csv_file)
-            
+
             df = slice_data(df, features_to_slice, model_to_compare, other_models, j)
 
             # Getting plot_id
             plot_id = os.path.split(csv_file)[-1].split(".")[0]
             fig = fig.add_trace(
                 go.Scatter(
-                    x=df[x_axis],
-                    y=df[y_axis],
-                    name=str(i) + "," + plot_id,
+                    x=df[x_axis], y=df[y_axis], name=f"{str(i)}," + plot_id
                 )
             )
 
@@ -216,16 +211,16 @@ def plot_umap(file, j=0):
     dictn = {'x': x, 'y': y, 'color': clusters}
     hover_data = []
     if "hover_texts" in data:
-        dictn.update({'hover': data['hover_texts']})
+        dictn['hover'] = data['hover_texts']
         if len(data['hover_texts']):
             hover_data = list(data['hover_texts'][0].keys())
 
     if arr.shape[1] == 3:
-        dictn.update({'z': arr[:, 2]})
+        dictn['z'] = arr[:, 2]
 
     for key in data.keys():
         if key not in ['umap', 'clusters', 'hover_texts']:
-            dictn.update({key: data[key]})
+            dictn[key] = data[key]
     df = pd.DataFrame(dictn)
     df = slice_data(df, features_to_slice, model_to_compare, other_models, j)
 
@@ -238,7 +233,7 @@ def plot_umap(file, j=0):
                 df[key] = pd.Series(hover_df[key]).fillna('').tolist()
     else:
         hover_df = pd.DataFrame()
-    
+
     if arr.shape[1] == 2:
         fig = px.scatter(df, x='x', y='y', color='color', hover_data=hover_data)
     elif arr.shape[1] == 3:
@@ -253,9 +248,7 @@ def plot_umap(file, j=0):
 
 
 def get_view_arr_from_files(files):
-    view_arr = []
-    for file in files:
-        view_arr.append(int(os.path.split(file)[-1].split('_')[0]))
+    view_arr = [int(os.path.split(file)[-1].split('_')[0]) for file in files]
     view_arr.sort()
     return np.unique(view_arr)
 
@@ -263,13 +256,21 @@ def get_view_arr_from_files(files):
 def plot_umaps(files, plot_name, sub_dir):
     view_arr = get_view_arr_from_files(files)
     if len(view_arr > 0):
-        selected_count = st.selectbox(f"Cluster View Point", view_arr, key=plot_name+'count')
+        selected_count = st.selectbox(
+            "Cluster View Point", view_arr, key=plot_name + 'count'
+        )
     cols = st.columns(2)
     for j in range(num_models_compare):
         if model_to_compare is not None:
             model_compare_name = model_to_compare['allowed_values'][j]
             model_others_name = list(other_models.values())[0]
-            file_name = str(selected_count) + '_' + model_compare_name + '_' + model_others_name + '.json'
+            file_name = (
+                f'{str(selected_count)}_'
+                + model_compare_name
+                + '_'
+                + model_others_name
+                + '.json'
+            )
             file_name = sub_dir + '/' + file_name
             with cols[j%2]:
                 st.subheader(f'Model: {model_compare_name}, Signal: {model_others_name}, Count: {selected_count}')
@@ -281,10 +282,9 @@ def plot_umaps(files, plot_name, sub_dir):
             for file in files:
                 count = os.path.split(file)[-1].split(".")[0]
                 if int(count) < 0:
-                    plot_umap(file, j) 
-                else:
-                    if st.checkbox(f"For count {count}", key=plot_name+str(count)):
-                        plot_umap(file, j)  
+                    plot_umap(file, j)
+                elif st.checkbox(f"For count {count}", key=plot_name+str(count)):
+                    plot_umap(file, j)  
 
 def plot_bar(file):
     with open(file, encoding='utf-8') as f:
@@ -295,10 +295,7 @@ def plot_bar(file):
             continue
         bar_dict = data[bar_name]
         keys, values = zip(*bar_dict.items())
-        if "hover_text" in data:
-            hover_text = data['hover_text'][bar_name]
-        else:
-            hover_text = {}
+        hover_text = data['hover_text'][bar_name] if "hover_text" in data else {}
         hover_text = list(hover_text.values())
         fig = fig.add_trace(
             go.Bar(
@@ -315,10 +312,9 @@ def plot_for_count(files, plot_func, plot_name):
     for file in files:
         count = os.path.split(file)[-1].split(".")[0]
         if int(count) < 0:
-            plot_func(file) 
-        else:
-            if st.checkbox(f"For count {count}", key=plot_name+str(count)):
-                plot_func(file)          
+            plot_func(file)
+        elif st.checkbox(f"For count {count}", key=plot_name+str(count)):
+            plot_func(file)          
 
 
 def plot_dashboard(dashboard_name):
@@ -330,19 +326,13 @@ def plot_dashboard(dashboard_name):
         c2 = sub_dir_split[-2] == "bar_graphs"
         c3 = sub_dir_split[-1] == "alerts"
         c4 = sub_dir_split[-1] == "tsne_and_clusters"
-        if c1 or c2 or c3 or c4:
-            ext = "*.json"
-        else:
-            ext = "*.csv"
-
+        ext = "*.json" if c1 or c2 or c3 or c4 else "*.csv"
         # Getting the list of relevant files in streamlit logs
         files = [file for path, _, _ in os.walk(sub_dir)
                     for file in glob(os.path.join(path, ext))]
         plot_name = sub_dir_split[-1]
 
-        ######### Showing Alerts ###########
-
-        if sub_dir_split[-1] == "alerts":  
+        if plot_name == "alerts":  
             for file in files:
                 alert_name = os.path.split(file)[-1].split(".")[0]
                 f = open(file)
@@ -351,26 +341,22 @@ def plot_dashboard(dashboard_name):
                 st.markdown("##### " + alert)
                 st.markdown("""---""")
 
-        ######### Line Plots ###########
-
         elif sub_dir_split[-2] == "line_plots":
             if st.sidebar.checkbox(f"Line-plot for {plot_name}"):
                 st.markdown(f"### Line chart for {plot_name}")
                 plot_line_charts(files, plot_name)
                 st.markdown("""---""")    
 
-        # ######### Plotting histograms ###########
-
         elif sub_dir_split[-2] == "histograms":
             if plot_name == "umap_and_clusters":
                 if st.sidebar.checkbox(f"UMAP for {plot_name}"):
                     st.markdown(f"### UMAP for {plot_name}")
-                    if model_args is not None:
-                        plot_umaps(files, plot_name, sub_dir)
-                    else:
+                    if model_args is None:
                         for file in files:
                             plot_umap(file)
-                    st.markdown("""---""") 
+                    else:
+                        plot_umaps(files, plot_name, sub_dir)
+                    st.markdown("""---""")
             elif plot_name == "tsne_and_clusters":  
                 if st.sidebar.checkbox(f"t-SNE for {plot_name}"):
                     st.markdown(f"### t-SNE for {plot_name}")
@@ -379,15 +365,12 @@ def plot_dashboard(dashboard_name):
                     else:
                         for file in files:
                             plot_umap(file)
-                    st.markdown("""---""")   
-            else:
-                if st.sidebar.checkbox(f"Histogram for {plot_name}"):
-                    st.markdown(f"### Histogram for {plot_name}")
-                    # plot_for_count(files, plot_histogram, plot_name) 
-                    plot_histograms(files, plot_name)
-                    st.markdown("""---""") 
-
-        ######### Plotting Bar Graphs ###########
+                    st.markdown("""---""")
+            elif st.sidebar.checkbox(f"Histogram for {plot_name}"):
+                st.markdown(f"### Histogram for {plot_name}")
+                # plot_for_count(files, plot_histogram, plot_name) 
+                plot_histograms(files, plot_name)
+                st.markdown("""---""") 
 
         elif sub_dir_split[-2] == "bar_graphs":
             if st.sidebar.checkbox(f"Bar graph for {plot_name}"):
@@ -396,20 +379,16 @@ def plot_dashboard(dashboard_name):
                 st.markdown("""---""")  
 
 
-        ######### Plotting Images ###########
-
-        # elif sub_dir_split[-1] == "images":
-        if True:
-            png_files = [
-                        file
-                        for path, _, _ in os.walk(sub_dir)
-                        for file in glob(os.path.join(path, "*.png"))
-                    ]
-            for i, png_file in enumerate(png_files):
-                # Getting image name
-                image_name = png_file.split("/")[-1].split(".")[0]
-                st.subheader(image_name)
-                st.image(png_file)
+        png_files = [
+                    file
+                    for path, _, _ in os.walk(sub_dir)
+                    for file in glob(os.path.join(path, "*.png"))
+                ]
+        for png_file in png_files:
+            # Getting image name
+            image_name = png_file.split("/")[-1].split(".")[0]
+            st.subheader(image_name)
+            st.image(png_file)
 
 
 def st_shap(plot, height=None):
@@ -420,12 +399,11 @@ def st_shap(plot, height=None):
 @st.cache
 def get_data_shap(path_all_data, num_points):
     import pickle
-    file = open(metadata["path_shap_file"], 'rb')
-    explainer = pickle.load(file)
-    file.close()
+    with open(metadata["path_shap_file"], 'rb') as file:
+        explainer = pickle.load(file)
     df = pd.read_csv(path_all_data)
     if len(df) >= num_points:
-        df = df[0:num_points]
+        df = df[:num_points]
     else:
         st.text("Not sufficient data points for SHAP")
         return []
@@ -441,41 +419,42 @@ for dashboard_name in dashboard_names:
         plot_dashboard(dashboard_name)
     st.sidebar.markdown("""---""")
 
-if metadata.get("path_shap_file", None):
-    if st.sidebar.checkbox(f"SHAP explainability"):
-        st.header(f"SHAP Explanability")
-        
-        path_all_data = metadata["path_all_data"]
+if metadata.get("path_shap_file", None) and st.sidebar.checkbox(
+    "SHAP explainability"
+):
+    st.header("SHAP Explanability")
 
-        num_points = metadata["shap_num_points"]
-        
-        shap_values, data_ids = get_data_shap(path_all_data, num_points)
+    path_all_data = metadata["path_all_data"]
 
-        shap.initjs() # for visualization
-        st.set_option('deprecation.showPyplotGlobalUse', False)
+    num_points = metadata["shap_num_points"]
 
-        st.subheader("Feature-wise importance")
-        st.text("Feature \"dist\" has the biggest impact on ride time predictions.")
-        cols = st.columns(2)
-        with cols[0]:
-            st.pyplot(shap.plots.bar(shap_values))
+    shap_values, data_ids = get_data_shap(path_all_data, num_points)
 
-        st.markdown("""---""")
+    shap.initjs() # for visualization
+    st.set_option('deprecation.showPyplotGlobalUse', False)
 
-        st.subheader("Explainability for each data-point")
-        cols = st.columns(2)
-        with cols[0]:
-            data_point = st.selectbox("Select data-point for explainability", data_ids)
+    st.subheader("Feature-wise importance")
+    st.text("Feature \"dist\" has the biggest impact on ride time predictions.")
+    cols = st.columns(2)
+    with cols[0]:
+        st.pyplot(shap.plots.bar(shap_values))
 
-        index = data_ids.index(data_point)
-        shap_val = shap_values[index]
-        pred = sum(shap_val.values) + shap_val.base_values
-        st.text(f"The predicted value is {pred:.1f} compared to the mean value of {shap_val.base_values:.1f}.")
-            
-        cols = st.columns(2)
-        with cols[0]:
-            shap.plots.waterfall(shap_val)
-            st.pyplot()
+    st.markdown("""---""")
+
+    st.subheader("Explainability for each data-point")
+    cols = st.columns(2)
+    with cols[0]:
+        data_point = st.selectbox("Select data-point for explainability", data_ids)
+
+    index = data_ids.index(data_point)
+    shap_val = shap_values[index]
+    pred = sum(shap_val.values) + shap_val.base_values
+    st.text(f"The predicted value is {pred:.1f} compared to the mean value of {shap_val.base_values:.1f}.")
+
+    cols = st.columns(2)
+    with cols[0]:
+        shap.plots.waterfall(shap_val)
+        st.pyplot()
 
 
 

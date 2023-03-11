@@ -27,10 +27,28 @@ class Convergence(AbstractStatistic):
 
         self.count_checkpoints = np.unique(np.array([0] + check["count_checkpoints"]))
 
-        self.feats_dictn = dict(zip(list(self.count_checkpoints), [{} for x in list(self.count_checkpoints)]))
+        self.feats_dictn = dict(
+            zip(
+                list(self.count_checkpoints),
+                [{} for _ in list(self.count_checkpoints)],
+            )
+        )
         # ex: {0: {agg_id_0: val_0, ..}, 200: {}, 500: {}, 1000: {}, 5000: {}, 20000: {}}
 
-        self.distances_dictn = dict(zip(list(self.count_checkpoints), [dict(zip(self.distance_types, [[] for x in list(self.distance_types)])) for y in list(self.count_checkpoints)]))
+        self.distances_dictn = dict(
+            zip(
+                list(self.count_checkpoints),
+                [
+                    dict(
+                        zip(
+                            self.distance_types,
+                            [[] for _ in list(self.distance_types)],
+                        )
+                    )
+                    for _ in list(self.count_checkpoints)
+                ],
+            )
+        )
         #ex: {0: {'cosine_distance': [d1, d2, ..]}, 200: {'cosine_distance': []}, 500: {'cosine_distance': []}, 1000: {'cosine_distance': []}, 5000: {'cosine_distance': []}, 20000: {'cosine_distance': []}}
 
         self.dist_classes = [DistanceResolver().resolve(x) for x in self.distance_types]
@@ -55,10 +73,21 @@ class Convergence(AbstractStatistic):
         ) for x in self.feature_measurables]
         self.total_count += len(extra_args['id'])
 
-        models = dict(zip(['model_' + x for x in self.model_names], [self.allowed_model_values[jdx][0] for jdx in range(len(self.model_names))]))
+        models = dict(
+            zip(
+                [f'model_{x}' for x in self.model_names],
+                [
+                    self.allowed_model_values[jdx][0]
+                    for jdx in range(len(self.model_names))
+                ],
+            )
+        )
 
         for idx in range(len(aggregate_ids)):
-            is_model_invalid = sum([all_models[jdx][idx] not in self.allowed_model_values[jdx] for jdx in range(len(self.allowed_model_values))])
+            is_model_invalid = sum(
+                all_models[jdx][idx] not in self.allowed_model_values[jdx]
+                for jdx in range(len(self.allowed_model_values))
+            )
             if is_model_invalid:
                 continue
 
@@ -72,9 +101,7 @@ class Convergence(AbstractStatistic):
             this_item_count = self.item_counts[aggregate_ids[idx]]
 
             crossed_checkpoint_arr = (np.logical_xor((self.count_checkpoints > this_item_count), (self.count_checkpoints > this_item_count_prev)))
-            has_crossed_checkpoint = sum(crossed_checkpoint_arr)
-
-            if has_crossed_checkpoint:
+            if has_crossed_checkpoint := sum(crossed_checkpoint_arr):
                 crossed_checkpoint = self.count_checkpoints[np.where(crossed_checkpoint_arr == True)[0][-1]]
 
                 if aggregate_ids[idx] not in self.first_count_checkpoint:
@@ -114,14 +141,18 @@ class Convergence(AbstractStatistic):
                     else:
                         del self.feats_dictn[crossed_checkpoint][aggregate_ids[idx]]
 
-                    features = dict(zip(['feature_' + x for x in self.feature_names], [all_features[jdx][idx] for jdx in range(len(self.feature_names))]))
+                    features = dict(
+                        zip(
+                            [f'feature_{x}' for x in self.feature_names],
+                            [
+                                all_features[jdx][idx]
+                                for jdx in range(len(self.feature_names))
+                            ],
+                        )
+                    )
 
                     for distance_key in list(this_distances.keys()):
-                        plot_name = (
-                            distance_key
-                            + " "
-                            + str(self.reference)
-                        )
+                        plot_name = f"{distance_key} {str(self.reference)}"
                         this_data = list(np.reshape(np.array(this_distances[distance_key]),-1))
 
                         self.distances_dictn[crossed_checkpoint][distance_key].extend(
@@ -154,14 +185,14 @@ class Convergence(AbstractStatistic):
 
                         if len(this_data) > 5:
                             self.log_handler.add_scalars(
-                                plot_name + "_mean",
+                                f"{plot_name}_mean",
                                 {'y_mean': np.mean(this_data)},
                                 count,
                                 self.dashboard_name,
-                                models = models,
-                                features = {"tagGenre": "All"},
-                                file_name = str("count"),
-                                update_val = True
+                                models=models,
+                                features={"tagGenre": "All"},
+                                file_name="count",
+                                update_val=True,
                             )
 
                             # next_count_idx = np.where(self.count_checkpoints == (count))[0][0] + 1

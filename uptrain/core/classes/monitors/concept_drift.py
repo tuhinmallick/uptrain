@@ -32,11 +32,7 @@ class ConceptDrift(AbstractMonitor):
     def base_check(self, inputs, outputs, gts=None, extra_args={}):
         batch_acc = self.measurable.compute_and_log(inputs, outputs, gts, extra_args)
         for acc in batch_acc:
-            if acc:
-                alert = self.algo.add_prediction(0)
-            else:
-                alert = self.algo.add_prediction(1)
-
+            alert = self.algo.add_prediction(0) if acc else self.algo.add_prediction(1)
             self.acc_arr.append(acc)
             self.avg_acc = (self.avg_acc * (len(self.acc_arr) - 1) + acc) / len(
                 self.acc_arr

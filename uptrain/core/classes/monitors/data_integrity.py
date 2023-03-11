@@ -19,12 +19,12 @@ class DataIntegrity(AbstractMonitor):
         signal_value = self.measurable.compute_and_log(
             inputs, outputs, gts=gts, extra=extra_args
         )
-        if self.integrity_type == "non_null":
-            has_issue = signal_value == None
+        if self.integrity_type == "greater_than":
+            has_issue = signal_value < self.threshold
         elif self.integrity_type == "less_than":
             has_issue = signal_value > self.threshold
-        elif self.integrity_type == "greater_than":
-            has_issue = signal_value < self.threshold
+        elif self.integrity_type == "non_null":
+            has_issue = signal_value is None
         self.count += len(signal_value)
         self.num_issues += np.sum(np.array(has_issue))
         plot_name = (
@@ -35,8 +35,8 @@ class DataIntegrity(AbstractMonitor):
             + str(self.threshold)
         )
         self.log_handler.add_scalars(
-            self.dashboard_name + "_" + plot_name,
-            {"y_" + plot_name: 1 - self.num_issues / self.count},
+            f"{self.dashboard_name}_{plot_name}",
+            {f"y_{plot_name}": 1 - self.num_issues / self.count},
             self.count,
             self.dashboard_name,
         )

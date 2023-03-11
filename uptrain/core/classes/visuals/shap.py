@@ -23,8 +23,7 @@ class Shap(AbstractVisual):
     def base_check(self, inputs, outputs, gts=None, extra_args={}):
         if not self.explainer_created:
             explainer = shap.Explainer(self.model)
-            file = open(self.fileloc, 'wb')
-            pickle.dump(explainer, file)
-            file.close()
+            with open(self.fileloc, 'wb') as file:
+                pickle.dump(explainer, file)
             self.explainer_created = True
 

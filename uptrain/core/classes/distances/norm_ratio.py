@@ -9,8 +9,5 @@ class NormRatio:
             base_norm = np.linalg.norm(base, axis=1)
         else:
             base_norm = np.abs(base)
-        if len(ref.shape) > 1:
-            ref_norm = np.linalg.norm(ref, axis=1)
-        else:
-            ref_norm = np.abs(ref)
+        ref_norm = np.linalg.norm(ref, axis=1) if len(ref.shape) > 1 else np.abs(ref)
         return base_norm / np.maximum(ref_norm, 1e-6)

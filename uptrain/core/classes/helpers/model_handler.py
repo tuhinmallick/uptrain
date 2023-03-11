@@ -39,7 +39,7 @@ class ModelHandler:
             New model is saved under the name: 'version_' + provided new_model_version
         """
 
-        self.training_func(training_file, "version_" + str(new_model_version))
+        self.training_func(training_file, f"version_{str(new_model_version)}")
 
     def set_inference_func(self, func):
         """Attach model evaluation pipeline"""
@@ -63,8 +63,8 @@ class ModelHandler:
             Number of data-points selected by the framework to add to the retraining dataset
         """
 
-        new_model_name = "version_" + str(new_model_version)
-        old_model_name = "version_" + str(new_model_version - 1)
+        new_model_name = f"version_{str(new_model_version)}"
+        old_model_name = f"version_{str(new_model_version - 1)}"
 
         # Train the old model
         # TODO: No need for this, we can just use the deployed old model

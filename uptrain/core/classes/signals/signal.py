@@ -29,10 +29,8 @@ class Signal:
     def __init__(self, name, fn=None, is_model_signal=False, extra_args={}):
         self.name = name
         if is_model_signal and (fn is None):
-            if not name in MODEL_SIGNAL_TO_FN_MAPPING:
-                raise Exception(
-                    "Evalution fn for signal: %s is not defined in constants" % name
-                )
+            if name not in MODEL_SIGNAL_TO_FN_MAPPING:
+                raise Exception(f"Evalution fn for signal: {name} is not defined in constants")
             fn = MODEL_SIGNAL_TO_FN_MAPPING[name]
         self.fn = fn
         self.extra_args = extra_args

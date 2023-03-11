@@ -64,7 +64,7 @@ class SqliteStore:
 
     def _init_table(self, datapoint: Dict[str, Any]):
         """Infer the schema for the logs table from the first datapoint."""
-        self._schema = dict()
+        self._schema = {}
         assert (
             "id" in datapoint
         ), "A column named `id` must be present in the logged data."
@@ -86,7 +86,7 @@ class SqliteStore:
         with self.conn:
             self.conn.execute(
                 f"INSERT INTO logs ({','.join(datapoint.keys())}) VALUES ({','.join('?' * len(datapoint))})",
-                list(self._encoders[i](x) for i, x in enumerate(datapoint.values())),
+                [self._encoders[i](x) for i, x in enumerate(datapoint.values())],
             )
 
     def log_many(self, datapoints: Dict[str, Sequence[Any]]):

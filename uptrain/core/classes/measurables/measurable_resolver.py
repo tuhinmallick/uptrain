@@ -19,13 +19,7 @@ class MeasurableResolver:
         self._args = args
 
     def has_valid_resolve_args(self):
-        if self._args is None:
-            return False
-
-        if len(self._args) == 0:
-            return False
-
-        return True
+        return False if self._args is None else len(self._args) != 0
 
     def resolve(self, framework) -> Measurable:
         if not self.has_valid_resolve_args():
