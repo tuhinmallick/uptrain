@@ -6,8 +6,7 @@ def cross_entropy_confidence(inputs, outputs, gts=None, extra_args={}):
     logits = logits - np.max(logits, axis=1)
     logits = np.exp(logits)
     logits = logits / np.sum(logits, axis=1)
-    conf = np.max(logits, axis=1)
-    return conf
+    return np.max(logits, axis=1)
 
 
 def binary_entropy_confidence(inputs, outputs, gts=None, extra_args={}):

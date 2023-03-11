@@ -29,8 +29,6 @@ def process(data):
 
 
 def download_dataset(data_file):    
-    remote_url = "https://oodles-dev-training-data.s3.amazonaws.com/trip_duration_dataset.csv"
-
     if not os.path.exists(data_file):
         print("Installing wget to download dataset from remote")
         try:
@@ -41,9 +39,16 @@ def download_dataset(data_file):
         except:
             print("Wget installation fails! Checking if data is manually downloaded")
             dummy = 1
+        remote_url = "https://oodles-dev-training-data.s3.amazonaws.com/trip_duration_dataset.csv"
+
         try:
             print("Downloading data from the remote server")
-            file_downloaded_ok = subprocess.call("wget " + remote_url, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+            file_downloaded_ok = subprocess.call(
+                f"wget {remote_url}",
+                shell=True,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.STDOUT,
+            )
             print("Data downloaded")
         except Exception as e:
             print(e)
@@ -58,18 +63,14 @@ def download_dataset(data_file):
 def pretty(d, indent=0):
     if isinstance(d, list):
         for value in d:
-            if isinstance(value, list):
-                pretty(value, indent)
-            elif isinstance(value, dict):
+            if isinstance(value, (list, dict)):
                 pretty(value, indent)
             else:
                 print('\t' * (indent) + str(value))
     else:
         for key, value in d.items():
             print('\t' * indent + "- " + str(key) + ":")
-            if isinstance(value, list):
-                pretty(value, indent+1)
-            elif isinstance(value, dict):
+            if isinstance(value, (list, dict)):
                 pretty(value, indent+1)
             else:
                 print('\t' * (indent+1) + str(value))

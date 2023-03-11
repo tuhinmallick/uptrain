@@ -42,7 +42,10 @@ class Distance(AbstractStatistic):
         ) for x in self.feature_measurables]
 
         for idx in range(len(aggregate_ids)):
-            is_model_invalid = sum([all_models[jdx][idx] not in self.allowed_model_values[jdx] for jdx in range(len(self.allowed_model_values))])
+            is_model_invalid = sum(
+                all_models[jdx][idx] not in self.allowed_model_values[jdx]
+                for jdx in range(len(self.allowed_model_values))
+            )
             if is_model_invalid:
                 continue
 
@@ -71,20 +74,29 @@ class Distance(AbstractStatistic):
             )
             if self.reference == "running_diff":
                 self.feats_dictn[aggregate_ids[idx]] = this_val
-            models = dict(zip(['model_' + x for x in self.model_names], [all_models[jdx][idx] for jdx in range(len(self.model_names))]))
-            features = dict(zip(['feature_' + x for x in self.feature_names], [all_features[jdx][idx] for jdx in range(len(self.feature_names))]))
-            for distance_type in self.distance_types:
-                plot_name = (
-                    distance_type
-                    + "_"
-                    + str(self.reference)
+            features = dict(
+                zip(
+                    [f'feature_{x}' for x in self.feature_names],
+                    [
+                        all_features[jdx][idx]
+                        for jdx in range(len(self.feature_names))
+                    ],
                 )
+            )
+            models = dict(
+                zip(
+                    [f'model_{x}' for x in self.model_names],
+                    [all_models[jdx][idx] for jdx in range(len(self.model_names))],
+                )
+            )
+            for distance_type in self.distance_types:
+                plot_name = f"{distance_type}_{str(self.reference)}"
                 self.log_handler.add_scalars(
-                    self.dashboard_name + "_" + plot_name,
-                    {'y_' + distance_type: this_distances[distance_type][0]},
+                    f"{self.dashboard_name}_{plot_name}",
+                    {f'y_{distance_type}': this_distances[distance_type][0]},
                     this_item_count,
                     self.dashboard_name,
-                    features = features,
-                    models = models,
-                    file_name = str(aggregate_ids[idx])
+                    features=features,
+                    models=models,
+                    file_name=str(aggregate_ids[idx]),
                 )

@@ -27,7 +27,7 @@ def cluster_and_plot_data(
     cluster_dictn = {}
     for idx in range(len(all_clusters)):
         this_elems = data[np.where(all_labels == idx)[0]]
-        cluster_dictn.update({idx: this_elems})
+        cluster_dictn[idx] = this_elems
         cluster_vars.append(
             np.mean(np.sum(np.abs(this_elems - all_clusters[idx]), axis=1))
         )
@@ -50,19 +50,18 @@ def cluster_and_plot_data(
     for idx in range(len(all_clusters)):
         this_elems = cluster_dictn[idx]
         all_elems_dists = np.sum(np.abs(this_elems - all_clusters[idx]), axis=1)
-        closest_idxs = np.argsort(all_elems_dists)[0:3]
-        idxs_closest_to_cluster_centroids.update({idx: closest_idxs})
+        closest_idxs = np.argsort(all_elems_dists)[:3]
+        idxs_closest_to_cluster_centroids[idx] = closest_idxs
 
-    dictn = []
-    for idx in range(len(all_clusters)):
-        dictn.append(
-            {
-                "cluster": all_clusters[idx],
-                "count": counts[idx],
-                "var": cluster_vars[idx],
-                "idxs_closest": idxs_closest_to_cluster_centroids[idx]
-            }
-        )
+    dictn = [
+        {
+            "cluster": all_clusters[idx],
+            "count": counts[idx],
+            "var": cluster_vars[idx],
+            "idxs_closest": idxs_closest_to_cluster_centroids[idx],
+        }
+        for idx in range(len(all_clusters))
+    ]
     dictn.sort(key=lambda x: x["count"], reverse=True)
 
     all_clusters = np.array([x["cluster"] for x in dictn])
@@ -88,20 +87,19 @@ def add_data_to_warehouse(data, path_csv, row_update=False):
         data[k] = [json.dumps(x, cls=UpTrainEncoder) for x in data[k]]
     if not os.path.exists(path_csv):
         pd.DataFrame(data).to_csv(path_csv, index=False)
+    elif row_update:
+        df = pd.read_csv(path_csv)
+        for k in list(data.keys()):
+            if row_update and k == "id":
+                continue
+            if k not in list(df.columns):
+                df[k] = None
+            df.loc[get_df_indices_from_ids(df, data["id"]), k] = np.array(
+                data[k], dtype="object"
+            )
+        pd.DataFrame(df).to_csv(path_csv, index=False)
     else:
-        if row_update:
-            df = pd.read_csv(path_csv)
-            for k in list(data.keys()):
-                if row_update and k == "id":
-                    continue
-                if k not in list(df.columns):
-                    df[k] = None
-                df.loc[get_df_indices_from_ids(df, data["id"]), k] = np.array(
-                    data[k], dtype="object"
-                )
-            pd.DataFrame(df).to_csv(path_csv, index=False)
-        else:
-            pd.DataFrame(data).to_csv(path_csv, index=False, mode="a", header=False)
+        pd.DataFrame(data).to_csv(path_csv, index=False, mode="a", header=False)
 
 def combine_data_points_for_batch(data):
     # what could be the generic logic???
@@ -141,27 +139,20 @@ def combine_data_points_for_batch(data):
 
 def extract_data_points_from_batch(data, idxs):
     if isinstance(data, dict):
-        this_data = {}
-        for key in list(data.keys()):
-            this_data.update({key: extract_data_points_from_batch(data[key], idxs)})
-        return this_data
+        return {
+            key: extract_data_points_from_batch(data[key], idxs)
+            for key in list(data.keys())
+        }
     elif isinstance(data, np.ndarray):
         return np.array(data[np.array(idxs)])
     elif isinstance(data, list):
-        if isinstance(idxs, int):
-            return data[idxs]
-        else:
-            return [data[x] for x in list(idxs)]
+        return data[idxs] if isinstance(idxs, int) else [data[x] for x in list(idxs)]
     else:
         return data
 
 
 def get_feature_names_list(inputs):
-    feat_name_list = []
-    for k in list(inputs.keys()):
-        if not (k == "id"):
-            feat_name_list.append(k)
-    return feat_name_list
+    return [k for k in list(inputs.keys()) if k != "id"]
 
 
 def add_data_to_batch(data, this_data):
@@ -172,7 +163,7 @@ def add_data_to_batch(data, this_data):
             data.update({key: val})
         return data
     else:
-        Exception("Invalid Data id type: %s" % type(data))
+        Exception(f"Invalid Data id type: {type(data)}")
 
 
 def get_df_indices_from_ids(df, ids):
@@ -180,9 +171,8 @@ def get_df_indices_from_ids(df, ids):
         all_id_array = np.array(df['id'])
         if np.all(np.diff(all_id_array) >= 0):
             return np.searchsorted(all_id_array, ids)
-        else:
-            sorter = np.argsort(all_id_array)
-            return sorter[np.searchsorted(all_id_array, ids, sorter=sorter)]
+        sorter = np.argsort(all_id_array)
+        return sorter[np.searchsorted(all_id_array, ids, sorter=sorter)]
     else:
         id_str_list = [eval(x) for x in df['id']]
         sorter = np.argsort(id_str_list)

@@ -57,8 +57,7 @@ class DatasetHandler:
     def transform_collected_data(self, data):
         """Transforms logged data via self.transformation_func"""
         if self.transformation_func:
-            transformed_data = [self.transformation_func(x) for x in data]
-            return transformed_data
+            return [self.transformation_func(x) for x in data]
 
     def create_retraining_dataset(
         self, dataset_location, new_data, old_dataset, ratio=5
@@ -70,7 +69,7 @@ class DatasetHandler:
         """
 
         new_data = self.transform_collected_data(new_data)
-        write_json(dataset_location + "/cleaned_dataset.json", new_data)
+        write_json(f"{dataset_location}/cleaned_dataset.json", new_data)
 
         if self.cluster_plot_func is not None:
             cluster_and_plot_data(
@@ -80,17 +79,19 @@ class DatasetHandler:
                 plot_save_name=self.log_handler.get_plot_save_name("collected_edge_cases_clusters.png", "edge_cases"),
             )
 
-        new_data = self.add_annotations(dataset_location + "/cleaned_dataset.json")
-        write_json(dataset_location + "/annotated_dataset.json", new_data)
+        new_data = self.add_annotations(f"{dataset_location}/cleaned_dataset.json")
+        write_json(f"{dataset_location}/annotated_dataset.json", new_data)
         write_json(
-            dataset_location + "/training_dataset.json",
+            f"{dataset_location}/training_dataset.json",
             self.merge_training_datasets(
-                old_dataset, dataset_location + "/annotated_dataset.json", ratio=ratio
+                old_dataset,
+                f"{dataset_location}/annotated_dataset.json",
+                ratio=ratio,
             ),
         )
         print(
             "Creating retraining dataset:",
-            dataset_location + "/training_dataset.json",
+            f"{dataset_location}/training_dataset.json",
             " by merging ",
             old_dataset,
             " and collected edge cases.\n",

@@ -66,7 +66,7 @@ class LogHandler:
         dashboard_dir = os.path.join(self.st_log_folder, dashboard_name)
         plot_folder = os.path.join(dashboard_dir, "line_plots", plot_name)
         os.makedirs(plot_folder, exist_ok=True)
-        new_dictn.update({"x_count": count})
+        new_dictn["x_count"] = count
         if file_name is None:
             file_name = plot_name
         self.st_writer.add_scalars(new_dictn, plot_folder, file_name=file_name, update_val=update_val)
@@ -98,8 +98,7 @@ class LogHandler:
         if isinstance(arr, str):
             return self.dir_friendly_name([arr])[0]
 
-        new_arr = [self.convert_str(x) for x in arr]
-        return new_arr
+        return [self.convert_str(x) for x in arr]
 
     def convert_str(self, txt):
         txt = txt.replace("(", "_")

@@ -23,7 +23,12 @@ def test_concept_drift():
             dummy = 1
         try:
             if not os.path.exists("data.zip"):
-                file_downloaded_ok = subprocess.call("wget " + remote_url, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+                file_downloaded_ok = subprocess.call(
+                    f"wget {remote_url}",
+                    shell=True,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.STDOUT,
+                )
                 print("Data downloaded")
         except:
             print("Could not load training data")
@@ -47,7 +52,7 @@ def test_concept_drift():
     classifier.fit(X_train, y_train)
 
     y_pred = classifier.predict(X_train)
-    print("Training accuracy: " + str(100*accuracy_score(y_train, y_pred)))     
+    print(f"Training accuracy: {str(100 * accuracy_score(y_train, y_pred))}")     
 
 
     """
@@ -68,24 +73,24 @@ def test_concept_drift():
         batch_size = len(extra_args["id"])
         self.count += batch_size
         self.acc_arr.extend(list(np.equal(gts, outputs)))
-        
+
         # Calculate initial performance of the model on first 200 points
         if (self.count >= self.window_size) and (self.initial_acc is None):
-            self.initial_acc = sum(self.acc_arr[0:self.window_size])/self.window_size
-            
+            self.initial_acc = sum(self.acc_arr[:self.window_size]) / self.window_size
+
         # Calculate the most recent accuracy and log it to dashboard.
         if (self.initial_acc is not None):
             for i in range(self.count - batch_size, self.count, self.window_size):
-                
+
                 # Calculate the most recent accuracy
                 recent_acc = sum(self.acc_arr[i:i+self.window_size])/self.window_size
-                
+
                 # Logging to UpTrain dashboard
                 self.log_handler.add_scalars('custom_metrics', {
                         'y_initial_acc': self.initial_acc,
                         'y_recent_acc': recent_acc,
                     }, i, self.dashboard_name)
-                
+
                 # Send an alert when recent model performance goes down 
                 if (self.initial_acc - recent_acc > self.thres) and (not self.is_drift_detected):
                     alert = f"Concept drift detected with custom metric at time: {i}" 
@@ -115,7 +120,7 @@ def test_concept_drift():
     cfg = {
         # Checks to identify concept drift
         "checks": checks,
-        
+
         # Folder that stores data logged by UpTrain
         "retraining_folder": 'uptrain_smart_data',
     }
@@ -125,14 +130,14 @@ def test_concept_drift():
 
     batch_size = len(X_test)
     for i in range(int(len(X_test)/batch_size)):
-        
+
         # Do model prediction
         inputs = {"feats": X_test[i*batch_size:(i+1)*batch_size]}
         preds = classifier.predict(inputs["feats"])
-        
+
         # Log model inputs and outputs to monitor concept drift
         ids = framework.log(inputs=inputs, outputs=preds)
-        
+
         # Attach ground truth to corresponding predictions 
         # in UpTrain framework and identify concept drift
         ground_truth = y_test[i*batch_size:(i+1)*batch_size] 

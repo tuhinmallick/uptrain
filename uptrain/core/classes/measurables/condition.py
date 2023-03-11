@@ -11,18 +11,18 @@ class ConditionMeasurable(Measurable):
         )
         if "formulae" in condition:
             formulae = condition["formulae"]
-            if (formulae == "leq") or (formulae == "<="):
+            if formulae in ["leq", "<="]:
                 condition_func = lambda x: (x <= condition["threshold"])
-            elif (formulae == "le") or (formulae == "<"):
+            elif formulae in ["le", "<"]:
                 condition_func = lambda x: (x < condition["threshold"])
-            elif (formulae == "geq") or (formulae == ">="):
+            elif formulae in ["geq", ">="]:
                 condition_func = lambda x: (x >= condition["threshold"])
-            elif (formulae == "ge") or (formulae == ">"):
+            elif formulae in ["ge", ">"]:
                 condition_func = lambda x: (x > condition["threshold"])
-            elif (formulae == "eq") or (formulae == "=="):
+            elif formulae in ["eq", "=="]:
                 condition_func = lambda x: (x == condition["threshold"])
             else:
-                raise Exception("Condition Formulae %s is not supported" % formulae)
+                raise Exception(f"Condition Formulae {formulae} is not supported")
         elif "func" in condition:
             condition_func = condition["func"]
         else:

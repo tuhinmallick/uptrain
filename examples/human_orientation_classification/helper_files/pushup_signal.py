@@ -45,5 +45,5 @@ def pushup_signal(inputs, outputs, gts=None, extra_args={}):
                 or is_front_orientation
             )
         )
-        is_pushups.append(bool(is_pushup))
+        is_pushups.append(is_pushup)
     return is_pushups

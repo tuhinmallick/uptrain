@@ -17,4 +17,4 @@ class DistanceResolver:
         elif distance_type == "norm_ratio":
             return NormRatio()
         else:
-            raise Exception("distance_type %s is not defined" % distance_type)
+            raise Exception(f"distance_type {distance_type} is not defined")

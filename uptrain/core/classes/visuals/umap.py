@@ -57,21 +57,21 @@ class Umap(AbstractVisual):
 
                 _, _, _, points_density, _ = cluster_and_plot_data(norm_data,20)
 
-                offset = 0
-                for data_point in data:
+                for offset, data_point in enumerate(data):
                     this_hovers = [x.extract_val_from_training_data(data_point) for x in self.hover_measurables]
                     self.hover_texts.append(dict(zip(self.hover_names, this_hovers)))
                     self.hover_texts[offset].update({"Training Density": int(points_density[offset])})
                     self.hover_texts[offset].update({"idx": offset})
-                    offset += 1
             if len(self.feature_measurables):
                 all_features = [list(np.reshape([feature_measurable.extract_val_from_training_data(x) for x in data], -1)) for feature_measurable in self.feature_measurables]
-                this_dict = dict(zip(['feature_' + x for x in self.feature_names], all_features))
-                for key in this_dict.keys():
+                this_dict = dict(
+                    zip([f'feature_{x}' for x in self.feature_names], all_features)
+                )
+                for key, value in this_dict.items():
                     if key in self.feature_dictn:
-                        self.feature_dictn[key].extend(this_dict[key])
+                        self.feature_dictn[key].extend(value)
                     else:
-                        self.feature_dictn.update({key: list(this_dict[key])})
+                        self.feature_dictn[key] = list(this_dict[key])
 
     def base_check(self, inputs, outputs, gts=None, extra_args={}):
         if self.measurable is not None:
@@ -89,8 +89,10 @@ class Umap(AbstractVisual):
             all_features = [x.compute_and_log(
                 inputs, outputs, gts=gts, extra=extra_args
             ) for x in self.feature_measurables]
-            this_dict = dict(zip(['feature_' + x for x in self.feature_names], all_features))
-            for key in this_dict.keys():
+            this_dict = dict(
+                zip([f'feature_{x}' for x in self.feature_names], all_features)
+            )
+            for key in this_dict:
                 if key in self.feature_dictn:
                     self.feature_dictn[key].extend(this_dict[key])
                 else:
@@ -108,8 +110,15 @@ class Umap(AbstractVisual):
             return
 
         self.prev_calc_at = self.total_count
-        models = dict(zip(['model_' + x for x in self.model_names], 
-            [self.allowed_model_values[jdx][0] for jdx in range(len(self.model_names))]))
+        models = dict(
+            zip(
+                [f'model_{x}' for x in self.model_names],
+                [
+                    self.allowed_model_values[jdx][0]
+                    for jdx in range(len(self.model_names))
+                ],
+            )
+        )
         for count in self.count_checkpoints:
             emb_list, label_list, hover_texts = self.get_high_dim_data(count)
             emb_list = np.array(emb_list)
@@ -132,51 +141,54 @@ class Umap(AbstractVisual):
                     "umap_and_clusters",
                     this_data,
                     self.dashboard_name,
-                    models = models,
-                    features = self.feature_dictn,
-                    file_name = str(count) + "_" + '_'.join(list(models.values()))
+                    models=models,
+                    features=self.feature_dictn,
+                    file_name=f"{str(count)}_" + '_'.join(list(models.values())),
                 )
 
     def get_high_dim_data(self, count):
-        if self.measurable is None:
-            distribution_anomaly = list(
-                filter(
-                    lambda x: x.statistic_type == Statistic.DISTRIBUTION_STATS,
-                    self.framework.check_manager.statistics_to_check,
-                )
-            )[0]
-            data_dict = distribution_anomaly.get_feats_for_clustering(count, self.allowed_model_values)
-            chosen_label_key = None
-            chosen_hover_key = None
-            if len(data_dict):
-                temp_val = list(data_dict.values())[0]
-                if len(temp_val):
-                    temp_keys = list(temp_val.keys())
-                    temp_keys = list(filter(lambda x: "visual_label_" in x, temp_keys))
-                    if len(temp_keys) > 1:
-                        print("Have multiple labels - " + str(temp_keys) + " .Using " + temp_keys[0] + " for labeling UMAPs." )
-                    if len(temp_keys) > 0:
-                        chosen_label_key = temp_keys[0]
-                if len(temp_val):
-                    temp_keys = list(temp_val.keys())
-                    temp_keys = list(filter(lambda x: "visual_hover_text_" in x, temp_keys))
-                    if len(temp_keys) > 1:
-                        print("Have multiple hover texts - " + str(temp_keys) + " .Using " + temp_keys[0] + " for hovering UMAPs." )
-                    if len(temp_keys) > 0:
-                        chosen_hover_key = temp_keys[0]
-            vals = np.array([data_dict[x]['val'] for x in data_dict])
-            if vals.shape[0] > 0:
-                vals = np.squeeze(vals, axis=1)
-            labels = []
-            if chosen_label_key is not None:
-                labels = [data_dict[x][chosen_label_key] for x in data_dict]
-
-            hover_texts = []
-            if chosen_hover_key is not None:
-                hover_texts = [{chosen_hover_key: data_dict[x][chosen_hover_key]} for x in data_dict]
-            return vals, labels, hover_texts
-        else:
+        if self.measurable is not None:
             return self.vals, self.labels, self.hover_texts
+        distribution_anomaly = list(
+            filter(
+                lambda x: x.statistic_type == Statistic.DISTRIBUTION_STATS,
+                self.framework.check_manager.statistics_to_check,
+            )
+        )[0]
+        data_dict = distribution_anomaly.get_feats_for_clustering(count, self.allowed_model_values)
+        chosen_label_key = None
+        chosen_hover_key = None
+        if len(data_dict):
+            temp_val = list(data_dict.values())[0]
+            if len(temp_val):
+                temp_keys = list(temp_val.keys())
+                temp_keys = list(filter(lambda x: "visual_label_" in x, temp_keys))
+                if len(temp_keys) > 1:
+                    print(
+                        f"Have multiple labels - {temp_keys} .Using {temp_keys[0]} for labeling UMAPs."
+                    )
+                if temp_keys:
+                    chosen_label_key = temp_keys[0]
+            if len(temp_val):
+                temp_keys = list(temp_val.keys())
+                temp_keys = list(filter(lambda x: "visual_hover_text_" in x, temp_keys))
+                if len(temp_keys) > 1:
+                    print(
+                        f"Have multiple hover texts - {temp_keys} .Using {temp_keys[0]} for hovering UMAPs."
+                    )
+                if temp_keys:
+                    chosen_hover_key = temp_keys[0]
+        vals = np.array([data_dict[x]['val'] for x in data_dict])
+        if vals.shape[0] > 0:
+            vals = np.squeeze(vals, axis=1)
+        labels = []
+        if chosen_label_key is not None:
+            labels = [data_dict[x][chosen_label_key] for x in data_dict]
+
+        hover_texts = []
+        if chosen_hover_key is not None:
+            hover_texts = [{chosen_hover_key: data_dict[x][chosen_hover_key]} for x in data_dict]
+        return vals, labels, hover_texts
 
     def get_umap_and_labels(
         self,
@@ -189,11 +201,7 @@ class Umap(AbstractVisual):
         min_samples,
         label_list=None
     ):
-        if dim == "2D":
-            n_components = 2
-        else:
-            n_components = 3
-
+        n_components = 2 if dim == "2D" else 3
         umap_embeddings = umap.UMAP(
             n_neighbors=n_neighbors,
             n_components=n_components,

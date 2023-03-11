@@ -116,8 +116,6 @@ class Framework:
     def get_data_id(self, inputs):
         if self.data_id_type in inputs:
             ids = inputs[self.data_id_type]
-        elif self.data_id_type in inputs:
-            ids = inputs[self.data_id_type]
         elif self.data_id_type == "utc_timestamp":
             timestamp = str(datetime.utcnow().timestamp()).replace(".", "")
             rand_int = random.sample(
@@ -129,7 +127,7 @@ class Framework:
                 range(self.predicted_count, self.predicted_count + self.batch_size)
             )
         else:
-            raise Exception("Invalid Data id type: %s" % self.data_id_type)
+            raise Exception(f"Invalid Data id type: {self.data_id_type}")
         return ids
 
     def smartly_add_data(self, data, extra_args={}):
@@ -164,7 +162,7 @@ class Framework:
             )
             add_data_to_warehouse(deepcopy(smart_data), path_smart_data)
 
-        edge_cases_txt = str(self.selected_count) + " edge cases identified out of " + str(self.predicted_count) + " total samples"
+        edge_cases_txt = f"{str(self.selected_count)} edge cases identified out of {str(self.predicted_count)} total samples"
         if self.selected_count > 0:
             self.log_handler.add_alert(
                 "Number of edge cases collected",
@@ -172,16 +170,13 @@ class Framework:
                 "edge_cases"
             )
 
-        if (not (self.selected_count == old_selected_count)) and (
-            not (int(self.selected_count / 50) == int(old_selected_count / 50))
-        ):
+        if self.selected_count != old_selected_count and int(
+            self.selected_count / 50
+        ) != int(old_selected_count / 50):
             print(edge_cases_txt)
 
     def infer_batch_size(self, inputs):
-        batch_sizes = []
-        for k, item in inputs.items():
-            item_batch_size = len(item)
-            batch_sizes.append(item_batch_size)
+        batch_sizes = [len(item) for k, item in inputs.items()]
         if np.var(np.array(batch_sizes)) > 0:
             # TODO: Raise warning on what is going wrong
             raise Exception("Batch size should be same for all input features")
@@ -249,10 +244,7 @@ class Framework:
     def need_retraining(self):
         """Checks if enough data-points are collected and the
         framework needs to kickoff model retraining"""
-        if self.if_retraining:
-            if self.selected_count > self.retrain_after:
-                return True
-        return False
+        return bool(self.if_retraining and self.selected_count > self.retrain_after)
 
     def retrain(self):
         """Retrains the model. Executes following steps sequentially.
@@ -331,15 +323,16 @@ class Framework:
         structures (e.g., cascaded models). 
         """
         df_gt = df.loc[gt_id_indices]
-        data = dict(zip(
+        data = dict(
+            zip(
                 self.feat_name_list,
                 [load_list_from_df(df_gt, x) for x in self.feat_name_list],
-            ))
-        data.update({
+            )
+        ) | {
             "output": load_list_from_df(df_gt, "output"),
             "id": list(gt_data["id"]),
             "gt": list(gt_data["gt"]),
-        })
+        }
         self.check(data, extra_args=self.extra_args)
         self.smartly_add_data(data, extra_args=self.extra_args)
 
@@ -386,18 +379,13 @@ class Framework:
     def convert_inputs_table_to_dict(self, inputs):
         cols = inputs.columns.tolist()
         ids = inputs.index.tolist()
-        data = {}
-        for col in cols:
-            data.update({col: np.array(list(inputs[col]))})
+        data = {col: np.array(list(inputs[col])) for col in cols}
         if 'id' not in cols:
-            data.update({"id": np.array(ids)})
+            data["id"] = np.array(ids)
         return data
     
     def convert_dict_values_to_numpy_values(self, inputs: dict) -> dict:
-        data = {}
-        for key, value in inputs.items():
-            data.update({key: np.array(value)})
-        return data
+        return {key: np.array(value) for key, value in inputs.items()}
 
     def log(self, inputs=None, outputs=None, gts=None, identifiers=None, extra=None):
         if self.run_background_log_consumer:

@@ -12,17 +12,14 @@ class CustomMeasurable(Measurable):
         self.signal_manager.add_signal_formulae(self._args["signal_formulae"])
 
     def _compute(self, inputs=None, outputs=None, gts=None, extra=None) -> any:
-        val = self.signal_manager.evaluate_signal(
+        return self.signal_manager.evaluate_signal(
             inputs, outputs, gts=gts, extra_args=extra
         )
-        return val
 
     def col_name(self):
         return str(self.signal_manager)
 
     # TODO: Decommission and find a generic way
     def extract_val_from_training_data(self, x):
-        fake_inputs = {}
-        for key, val in x.items():
-            fake_inputs.update({key: np.array([val])})
+        fake_inputs = {key: np.array([val]) for key, val in x.items()}
         return self.signal_manager.evaluate_signal(fake_inputs, None)

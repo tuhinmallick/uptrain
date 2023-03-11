@@ -36,7 +36,7 @@ class Clustering:
         self.dist = np.array(self.dist)
         self.dist_counts = np.array(self.dist_counts)
 
-        clustering_results = {
+        return {
             "buckets": self.buckets,
             "clusters": self.clusters,
             "cluster_vars": self.cluster_vars,
@@ -44,10 +44,8 @@ class Clustering:
             "dist_counts": self.dist_counts,
             "max_along_axis": self.max_along_axis,
             'low_density_regions': self.low_density_regions,
-            "idxs_closest_to_cluster_centroids": self.idxs_closest_to_cluster_centroids
+            "idxs_closest_to_cluster_centroids": self.idxs_closest_to_cluster_centroids,
         }
-
-        return clustering_results
 
 
     def bucket_scalar(self, arr):
@@ -66,7 +64,7 @@ class Clustering:
             buckets = []
             clusters = []
             cluster_vars = []
-            for idx in range(0, self.NUM_BUCKETS):
+            for idx in range(self.NUM_BUCKETS):
                 if idx > 0:
                     buckets.append(
                         sorted_arr[int(idx * (len(sorted_arr) - 1) / self.NUM_BUCKETS)]
@@ -81,9 +79,12 @@ class Clustering:
                 clusters.append([gaussian_mean])
                 cluster_vars.append([gaussian_var])
 
-        self.dist.append([[1 / self.NUM_BUCKETS] for x in range(self.NUM_BUCKETS)])
+        self.dist.append([[1 / self.NUM_BUCKETS] for _ in range(self.NUM_BUCKETS)])
         self.dist_counts.append(
-            [[int(len(sorted_arr) / self.NUM_BUCKETS)] for x in range(self.NUM_BUCKETS)]
+            [
+                [int(len(sorted_arr) / self.NUM_BUCKETS)]
+                for _ in range(self.NUM_BUCKETS)
+            ]
         )
         return np.array(buckets), np.array(clusters), np.array(cluster_vars)
 

@@ -58,9 +58,7 @@ class KpsDataset:
 
         for idx in range(len(batch_kps)):
             raw_kps = np.reshape(np.array(batch_kps[idx]), (17, 2))
-            kps = []
-            for ijdx in range(17):
-                kps.append(Keypoint(x=raw_kps[ijdx][0], y=raw_kps[ijdx][1]))
+            kps = [Keypoint(x=raw_kps[ijdx][0], y=raw_kps[ijdx][1]) for ijdx in range(17)]
             image = np.zeros((2, 2, 3))
 
             if self.augmentations:
@@ -82,20 +80,18 @@ class KpsDataset:
                 new_kps = np.reshape(raw_kps, 34)
             batch_kps[idx] = np.array(new_kps)
 
-        if self.is_test:
-            sample = (
+        return (
+            (
                 {"kps": np.array(batch_kps), "id": np.array(batch_ids)},
                 np.array(batch_gts),
             )
-        else:
-            sample = (np.array(batch_kps), np.array(batch_gts))
-
-        return sample
+            if self.is_test
+            else (np.array(batch_kps), np.array(batch_gts))
+        )
 
     def __iter__(self):
         """Create a generator that iterate over the Sequence."""
-        for item in (self[i] for i in range(len(self))):
-            yield item
+        yield from (self[i] for i in range(len(self)))
 
 
 def read_json(file_name, dataframe=False):
@@ -157,26 +153,23 @@ def plot_all_cluster(all_clusters, num_labels):
         frame = plot_kps_as_image(
             all_clusters[idx], int(100 * num_labels[idx] / sum(num_labels))
         )
-        cv2.imwrite(str(idx) + ".png", frame)
+        cv2.imwrite(f"{str(idx)}.png", frame)
 
     # TODO: Plot images so that size of the image is proportional to the count of that cluster
     plot_cluster_as_image(len(all_clusters))
 
 
 def plot_cluster_as_image(num_clusters):
-    for idx in range(0, int(num_clusters / 5)):
-        for jdx in range(0, 5):
+    for idx in range(int(num_clusters / 5)):
+        for jdx in range(5):
             if jdx == 0:
-                frame = cv2.imread(str(idx * 5 + jdx) + ".png")
+                frame = cv2.imread(f"{str(idx * 5 + jdx)}.png")
             else:
-                this_frame = cv2.imread(str(idx * 5 + jdx) + ".png")
+                this_frame = cv2.imread(f"{str(idx * 5 + jdx)}.png")
                 frame = cv2.hconcat([frame, this_frame])
-            os.remove(str(idx * 5 + jdx) + ".png")
-        if idx == 0:
-            full_frame = frame
-        else:
-            full_frame = cv2.vconcat([full_frame, frame])
-    file_name = "num_clusters_" + str(num_clusters)
+            os.remove(f"{str(idx * 5 + jdx)}.png")
+        full_frame = frame if idx == 0 else cv2.vconcat([full_frame, frame])
+    file_name = f"num_clusters_{str(num_clusters)}"
     cv2.imwrite(file_name + ".png", full_frame)
 
 
@@ -189,10 +182,10 @@ def plot_kps_as_image(kps, prob):
     h, w = frame.shape[0], frame.shape[1]
     color = [256, 256, 256]
 
+    radius = 3
     for iter_keypoints in range(17):
         x_raw_cord = int(np.ceil(kps[iter_keypoints][1]))
         y_raw_cord = int(np.ceil(kps[iter_keypoints][0]))
-        radius = 3
         frame[
             min(max(0, x_raw_cord - radius), h) : max(0, min(x_raw_cord + radius, h)),
             min(max(0, y_raw_cord - radius), w) : max(0, min(y_raw_cord + radius, w)),
@@ -225,7 +218,7 @@ def plot_kps_as_image(kps, prob):
 
     cv2.putText(
         frame,
-        "Prob: " + str(prob),
+        f"Prob: {str(prob)}",
         (5, 15),
         cv2.FONT_HERSHEY_SIMPLEX,
         0.5,
@@ -239,30 +232,27 @@ def plot_kps_as_image(kps, prob):
 def plot_all_cluster(all_clusters, num_labels, plot_save_name=""):
     for idx in range(len(all_clusters)):
         frame = plot_kps_as_image(all_clusters[idx], int(num_labels[idx]))
-        cv2.imwrite(str(idx) + ".png", frame)
+        cv2.imwrite(f"{str(idx)}.png", frame)
 
     # TODO: Plot images so that size of the image is proportional to the count of that cluster
     plot_cluster_as_image(len(all_clusters), plot_save_name=plot_save_name)
 
 
 def plot_cluster_as_image(num_clusters, plot_save_name=""):
-    for idx in range(0, int(np.ceil(num_clusters / 5))):
-        for jdx in range(0, 5):
+    for idx in range(int(np.ceil(num_clusters / 5))):
+        for jdx in range(5):
             if idx * 5 + jdx >= num_clusters:
                 frame = cv2.hconcat([frame, this_frame * 0])
                 continue
             if jdx == 0:
-                frame = cv2.imread(str(idx * 5 + jdx) + ".png")
+                frame = cv2.imread(f"{str(idx * 5 + jdx)}.png")
             else:
-                this_frame = cv2.imread(str(idx * 5 + jdx) + ".png")
+                this_frame = cv2.imread(f"{str(idx * 5 + jdx)}.png")
                 frame = cv2.hconcat([frame, this_frame])
-            os.remove(str(idx * 5 + jdx) + ".png")
-        if idx == 0:
-            full_frame = frame
-        else:
-            full_frame = cv2.vconcat([full_frame, frame])
+            os.remove(f"{str(idx * 5 + jdx)}.png")
+        full_frame = frame if idx == 0 else cv2.vconcat([full_frame, frame])
     if plot_save_name == "":
-        plot_save_name = "num_clusters_" + str(num_clusters) + ".png"
+        plot_save_name = f"num_clusters_{str(num_clusters)}.png"
     cv2.imwrite(plot_save_name, full_frame)
 
 
@@ -275,10 +265,10 @@ def plot_kps_as_image(kps, prob):
     h, w = frame.shape[0], frame.shape[1]
     color = [256, 256, 256]
 
+    radius = 3
     for iter_keypoints in range(17):
         x_raw_cord = int(np.ceil(kps[iter_keypoints][1]))
         y_raw_cord = int(np.ceil(kps[iter_keypoints][0]))
-        radius = 3
         frame[
             min(max(0, x_raw_cord - radius), h) : max(0, min(x_raw_cord + radius, h)),
             min(max(0, y_raw_cord - radius), w) : max(0, min(y_raw_cord + radius, w)),
@@ -311,7 +301,7 @@ def plot_kps_as_image(kps, prob):
 
     cv2.putText(
         frame,
-        "Support: " + str(prob),
+        f"Support: {str(prob)}",
         (5, 15),
         cv2.FONT_HERSHEY_SIMPLEX,
         0.5,

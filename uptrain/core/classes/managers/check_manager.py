@@ -122,7 +122,7 @@ class CheckManager:
             final_reason = ["None"] * len(reasons[0])
             for reas in reasons:
                 for jdx in range(len(reas)):
-                    if not (reas[jdx] == "None"):
+                    if reas[jdx] != "None":
                         final_reason[jdx] = reas[jdx]
         else:
             final_reason = []

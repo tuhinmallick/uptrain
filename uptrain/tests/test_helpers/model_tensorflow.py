@@ -49,10 +49,9 @@ def get_accuracy_tf(testing_file, model_save_name, model_dir="trained_models_tf/
         pred_classes.extend(pred_class)
         gt_classes.extend(list(elem[1]))
 
-    accuracy = np.sum(np.array(gt_classes) == np.array(pred_classes)) / len(
+    return np.sum(np.array(gt_classes) == np.array(pred_classes)) / len(
         pred_classes
     )
-    return accuracy
 
 
 def train_model_tf(training_file, model_save_name, model_dir="trained_models_tf/"):

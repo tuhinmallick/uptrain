@@ -24,7 +24,7 @@ def test_dashboard():
             "multiple_histograms",
             data,
             dashboard_name,
-            file_name="random(1,100) + " + str(count)
+            file_name=f"random(1,100) + {str(count)}",
         )
 
     data = np.random.normal(size=1000)
@@ -64,14 +64,14 @@ def test_dashboard():
             i,
             dashboard_name,
         )
-        
 
-    bar1_y = [i for i in range(5)]
-    bar1_x = ["date: " + str(i) for i in range(5)]
+
+    bar1_y = list(range(5))
+    bar1_x = [f"date: {str(i)}" for i in range(5)]
     bar1_dict = dict(zip(bar1_x, bar1_y))
 
-    bar2_y = [i for i in range(5,-1,-1)]
-    bar2_x = ["date: " + str(i) for i in range(5)]
+    bar2_y = list(range(5,-1,-1))
+    bar2_x = [f"date: {str(i)}" for i in range(5)]
     bar2_dict = dict(zip(bar2_x, bar2_y))
 
     bar_dict = {'bar1': bar1_dict, 'bar2': bar2_dict}

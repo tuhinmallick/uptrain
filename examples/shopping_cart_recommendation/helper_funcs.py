@@ -3,7 +3,7 @@ import json
 import subprocess
 
 def load_sigir_data(data_file):
-    remote_url = "https://oodles-dev-training-data.s3.amazonaws.com/" + data_file
+    remote_url = f"https://oodles-dev-training-data.s3.amazonaws.com/{data_file}"
     if not os.path.exists(data_file):
         try:
             # Most Linux distributions have Wget installed by default.
@@ -14,7 +14,12 @@ def load_sigir_data(data_file):
             dummy = 1
         try:
             if not os.path.exists("sigir_data.json"):
-                file_downloaded_ok = subprocess.call("wget " + remote_url, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+                file_downloaded_ok = subprocess.call(
+                    f"wget {remote_url}",
+                    shell=True,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.STDOUT,
+                )
                 print("Data downloaded")
         except:
             print("Could not load training data")
@@ -23,10 +28,10 @@ def load_sigir_data(data_file):
             print("Step 2: Download and move the file to example location (i.e. uptrain/examples/3_shopping_cart_recommendation/")
     else:
         print("Data file exists. Skipping download.")
-    
+
     with open('sigir_data.json') as f:
         data = json.load(f)
-    
+
     return data
     
 def model_predict(model, x_test_batch):

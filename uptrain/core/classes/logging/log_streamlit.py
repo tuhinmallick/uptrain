@@ -42,10 +42,15 @@ class StreamlitLogs:
         remote_st_py_file = "../../uptrain/core/classes/logging/st_run.py"
 
         if port is None:
-            cmd = "streamlit run " + remote_st_py_file + " -- " + self.log_folder
+            cmd = f"streamlit run {remote_st_py_file} -- " + self.log_folder
         else:
             port = get_free_port(int(port))
-            cmd = "streamlit run " + remote_st_py_file + f" --server.port {str(port)} " + " -- " + self.log_folder
+            cmd = (
+                f"streamlit run {remote_st_py_file}"
+                + f" --server.port {str(port)} "
+                + " -- "
+                + self.log_folder
+            )
         launch_st = lambda: os.system(cmd)
         t = threading.Thread(target=launch_st, args=([]))
         t.start()
@@ -64,19 +69,16 @@ class StreamlitLogs:
             cond = None
             keys = list(dict.keys())
             for key in keys:
-                if key[0:2] == 'y_':
+                if key[:2] == 'y_':
                     continue
-                if cond is None:
-                    cond = df[key] == dict[key]
-                else:
-                    cond = cond & (df[key] == dict[key])
+                cond = df[key] == dict[key] if cond is None else cond & (df[key] == dict[key])
             if len(df[cond]):
                 for key in keys:
                     df.loc[cond, key] = dict[key]
             else:
                 df = pd.concat([df, pd.DataFrame([dict])], ignore_index = True)
                 for key in keys:
-                    if key[0:2] == 'x_':
+                    if key[:2] == 'x_':
                         df = df.sort_values(by=[key])
             df.to_csv(file_name, index=False)
         else:
@@ -121,12 +123,12 @@ class StreamlitLogs:
 
 
     def add_alert(self, alert_name, alert, folder):
-        file_name = os.path.join(folder, str(alert_name) + ".json")
+        file_name = os.path.join(folder, f"{str(alert_name)}.json")
         with open(file_name, "w") as f:
             json.dump(alert, f)
 
     def add_bar_graphs(self, data, folder, count=-1, hover_data={}):
-        file_name = os.path.join(folder, str(count) + ".json")
+        file_name = os.path.join(folder, f"{str(count)}.json")
         if len(hover_data):
             data.update({'hover_text': hover_data})
         with open(file_name, "w") as f:
